@@ -56,8 +56,11 @@ public :
 
 	void showInfo(bool verbose);
 	virtual void switchVc(bool enter);
+	virtual bool handoff(bool enter) { return true; }
 
 protected:
+	virtual bool drawingReady() { return true; }
+	virtual bool copyRect(u32 sx, u32 sy, u32 dx, u32 dy, u32 w, u32 h) { return false; }
 	u32 mWidth, mHeight;
 	u16 mCols, mRows;
 	u32 mBitsPerPixel, mBytesPerLine;

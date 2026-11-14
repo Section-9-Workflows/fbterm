@@ -247,6 +247,7 @@ bool Config::parseArgs(s32 argc, s8 **argv)
 		{ "ambiguous-wide", no_argument, 0, 'a' },
 		{ "term-is-linux", no_argument, 0, 'l' },
 		{ "screen-blank-interval", required_argument, 0, 'K' },
+		{ "poulsback", no_argument, 0, 'P' },
 #ifdef ENABLE_VESA
 		{ "vesa-mode", required_argument, 0, 0 },
 #endif
@@ -283,6 +284,7 @@ bool Config::parseArgs(s32 argc, s8 **argv)
 				"  -c, --cursor-shape=NUM          specify default cursor shape\n"
 				"  -C, --cursor-interval=NUM       specify cursor flash interval\n"
 				"  -K, --screen-blank-interval=NUM specify screen blank interval\n"
+				"      --poulsback                 use native Poulsback DRM/2D scrolling\n"
 #ifdef ENABLE_VESA
 				"      --vesa-mode=NUM             force VESA video mode\n"
 				"                  list            display available VESA video modes\n"

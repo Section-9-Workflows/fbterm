@@ -27,6 +27,9 @@
 #include "fbconfig.h"
 #include "fbdev.h"
 #include "config.h"
+#ifdef ENABLE_POULSBACK
+#include "poulsbackdev.h"
+#endif
 #ifdef ENABLE_VESA
 #include "vesadev.h"
 #endif
@@ -52,6 +55,15 @@ Screen *Screen::createInstance()
 
 	Screen *pScreen = 0;
 
+	s8 native[8];
+	Config::instance()->getOption("poulsback", native, sizeof(native));
+	if (!strcmp(native, "yes")) {
+#ifdef ENABLE_POULSBACK
+		pScreen = PoulsbackDev::create();
+#else
+		fprintf(stderr, "Poulsback support was not compiled in.\n");
+#endif
+	} else {
 #ifdef ENABLE_VESA
 	s8 buf[16];
 	Config::instance()->getOption("vesa-mode", buf, sizeof(buf));
@@ -68,6 +80,7 @@ Screen *Screen::createInstance()
 #else
 	pScreen = FbDev::initFbDev();
 #endif
+	}
 
 	if (!pScreen) return 0;
 
@@ -145,7 +158,9 @@ void Screen::switchVc(bool enter)
 
 bool Screen::move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h)
 {
-	if (!mScrollEnable || mScrollType == Redraw || scol != dcol) return false;
+	if (!mScrollEnable) return false;
+	if (copyRect(FW(scol), FH(srow), FW(dcol), FH(drow), FW(w), FH(h))) return true;
+	if (mScrollType == Redraw || scol != dcol) return false;
 
 	u16 top = MIN(srow, drow), bot = MAX(srow, drow) + h;
 	u16 left = scol, right = scol + w;
@@ -210,6 +225,7 @@ bool Screen::move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h)
 
 void Screen::eraseMargin(bool top, u16 h)
 {
+	if (!drawingReady()) return;
 	if (mWidth % FW(1)) {
 		fillRect(FW(mCols), top ? 0 : FH(mRows - h), mWidth % FW(1), FH(h), 0);
 	}
@@ -228,6 +244,7 @@ void Screen::eraseMargin(bool top, u16 h)
 
 void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
 {
+	if (!drawingReady()) return;
 	u32 startx, fw = FW(1);
 
 	u16 startnum;
@@ -288,6 +305,7 @@ void Screen::adjustOffset(u32 &x, u32 &y)
 
 void Screen::fillRect(u32 x, u32 y, u32 w, u32 h, u8 color)
 {
+	if (!drawingReady()) return;
 	if (x >= mWidth || y >= mHeight || !w || !h) return;
 	if (x + w > mWidth) w = mWidth - x;
 	if (y + h > mHeight) h = mHeight - y;
@@ -303,6 +321,7 @@ void Screen::fillRect(u32 x, u32 y, u32 w, u32 h, u8 color)
 
 void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u32 code, bool dw)
 {
+	if (!drawingReady()) return;
 	if (x >= mWidth || y >= mHeight) return;
 
 	s32 w = (dw ? FW(2) : FW(1)), h = FH(1);

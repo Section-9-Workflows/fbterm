@@ -40,6 +40,13 @@ AC_ARG_ENABLE(signalfd,
 AC_CHECK_LIB([util], [forkpty])
 PKG_CHECK_MODULES([FT2], [freetype2])
 PKG_CHECK_MODULES([FC], [fontconfig])
+AC_ARG_ENABLE([poulsback], AS_HELP_STRING([--enable-poulsback], [build the native Poulsback backend]), [], [enable_poulsback=no])
+AS_IF([test "x$enable_poulsback" = xyes], [
+  PKG_CHECK_MODULES([DRM], [libdrm >= 2.4.65])
+  AC_DEFINE([ENABLE_POULSBACK], [1], [Native Poulsback DRM backend])
+])
+AM_CONDITIONAL([POULSBACK], [test "x$enable_poulsback" = xyes])
+AC_SYS_LARGEFILE
 
 # Checks for header files.
 AC_HEADER_STDC

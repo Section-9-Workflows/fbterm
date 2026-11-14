@@ -203,6 +203,10 @@ void FbTerm::processSignal(u32 signo)
 		break;
 
 	case SIGUSR1:
+		if (!Screen::instance()->handoff(false)) {
+			ioctl(STDIN_FILENO, VT_RELDISP, 0);
+			break;
+		}
 		FbShellManager::instance()->switchVc(false);
 		Screen::instance()->switchVc(false);
 		TtyInput::instance()->switchVc(false);
@@ -211,6 +215,7 @@ void FbTerm::processSignal(u32 signo)
 		break;
 
 	case SIGUSR2:
+		if (!Screen::instance()->handoff(true)) break;
 		Mouse::instance()->switchVc(true);
 		TtyInput::instance()->switchVc(true);
 		Screen::instance()->switchVc(true);
