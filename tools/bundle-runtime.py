@@ -41,7 +41,7 @@ for path in paths:
         ['dpkg-query', '-W', '-f=${Version}\t${source:Package}\t${source:Version}', owner], text=True)
     notice = Path('/usr/share/doc') / owner.split(':')[0] / 'copyright'
     destination = private / 'share/runtime-licenses' / owner.replace(':', '_')
-    destination.mkdir(parents=True)
+    destination.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(notice, destination / 'copyright')
 shutil.copytree('/usr/share/common-licenses', private / 'share/runtime-licenses/common')
 (private / 'share/runtime-packages.json').write_text(json.dumps(packages, indent=2) + '\n')
