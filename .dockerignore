@@ -1,0 +1,15 @@
+.git
+.gitignore
+*.o
+*.a
+.deps
+Makefile
+config.h
+config.log
+config.status
+stamp-h1
+autom4te.cache
+src/fbterm
+im/imexample
+debian/fbterm
+debian/.debhelper

@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+# Based on Debian fbterm 1.7-5 packaging by Nobuhiro Iwamatsu.
+export DEB_BUILD_OPTIONS = nocheck
+export CFLAGS = -O2 -march=bonnell -mtune=bonnell
+export CXXFLAGS = -O2 -march=bonnell -mtune=bonnell
+export LDFLAGS = -Wl,-z,relro,-z,now
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- --prefix=/opt/fbterm --enable-poulsback --disable-vesa --enable-epoll --enable-signalfd
+
+override_dh_auto_test:
+	# Owner validation policy: compilation and actual application workflows only.
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/fbterm
+	python3 tools/bundle-runtime.py debian/fbterm
+
+# All ELF dependencies are private and bundled, not system package dependencies.
+override_dh_shlibdeps:
+
+override_dh_makeshlibs:
+
+override_dh_strip:
+	strip debian/fbterm/opt/fbterm/bin/fbterm
+
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
