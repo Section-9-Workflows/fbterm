@@ -18,7 +18,7 @@ override_dh_auto_install:
 	dh_auto_install --destdir=debian/fbterm
 	python3 tools/bundle-runtime.py debian/fbterm
 
-# All ELF dependencies are private and bundled, not system package dependencies.
+# Bundle ELF libraries privately so installation needs no system library updates.
 override_dh_shlibdeps:
 
 override_dh_makeshlibs:

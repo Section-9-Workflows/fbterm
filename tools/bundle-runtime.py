@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Package the built executable's real dependency closure in a private runtime."""
+"""Bundle the built executable and all libraries it needs in a private runtime."""
 import json
 from pathlib import Path
 import re
@@ -48,7 +48,7 @@ shutil.copytree('/usr/share/common-licenses', private / 'share/runtime-licenses/
 launcher = root / 'usr/bin/fbterm'
 launcher.parent.mkdir(parents=True)
 launcher.write_text('''#!/bin/sh
-# The private loader affects fbterm only; child shells keep their system runtime.
+# Only fbterm uses the private loader. Child shells use their system runtime.
 export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}/opt/fbterm/share/terminfo:/etc/terminfo:/lib/terminfo:/usr/share/terminfo"
 exec /opt/fbterm/lib/ld-linux.so.2 --library-path /opt/fbterm/lib /opt/fbterm/bin/fbterm "$@"
 ''')

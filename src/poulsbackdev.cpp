@@ -155,7 +155,7 @@ bool PoulsbackDev::handoff(bool enter)
 
 bool PoulsbackDev::copyRect(u32 sx, u32 sy, u32 dx, u32 dy, u32 w, u32 h)
 {
-	// A failed native operation must never become an unsynchronized CPU redraw.
+	// Return true after failure to prevent a CPU redraw without GPU synchronization.
 	if (!drawingReady() || !w || !h) return true;
 	if (sx >= mWidth || dx >= mWidth || sy >= mHeight || dy >= mHeight ||
 	    w > mWidth - sx || w > mWidth - dx || h > mHeight - sy || h > mHeight - dy) {
@@ -173,7 +173,7 @@ bool PoulsbackDev::copyRect(u32 sx, u32 sy, u32 dx, u32 dy, u32 w, u32 h)
 	surface.stride = mBytesPerLine; surface.width = mWidth; surface.height = mHeight;
 	surface.format = POULSBACK_2D_XRGB8888;
 	struct poulsback_2d_op op = {};
-	op.kind = POULSBACK_2D_COPY; op.rop = 3; // GXcopy, overlap handled by the driver.
+	op.kind = POULSBACK_2D_COPY; op.rop = 3; // GXcopy. The driver handles overlap.
 	op.src_x = sx; op.src_y = sy;
 	op.rect.x = dx; op.rect.y = dy; op.rect.width = w; op.rect.height = h;
 	struct poulsback_submit_2d submit = {};
@@ -207,7 +207,7 @@ PoulsbackDev::~PoulsbackDev()
 	if (!mFailed && mFramebuffer) drmModeRmFB(mFd, mFramebuffer);
 	if (mVMemBase) munmap(mVMemBase, mSize);
 	if (mDmaFd >= 0) close(mDmaFd);
-	// File close uses the driver's fence/HOLD ownership rules; never reset/unload.
+	// The driver retains buffers on failure. Do not reset or unload it.
 	if (mFd >= 0) close(mFd);
 	if (mSaved) drmModeFreeCrtc(mSaved);
 	fprintf(stderr, "Poulsback: %llu synchronized GPU scroll copies; %s.\n", mCopies,
