@@ -681,6 +681,14 @@ void VTerm::set_led()
 	request(param[0] ? LedSet : LedClear,  param[0]);
 }
 
+void VTerm::enter_string_state()
+{
+	/* Enter string consuming state (DCS, SOS, PM, APC, OSC).
+	 * All characters are swallowed until ST (ESC \ or 0x9C) is received.
+	 * OSC is also commonly terminated by BEL (0x07). */
+	mExpectST = true;
+}
+
 void VTerm::fbterm_specific()
 {
 	switch (param[0]) {

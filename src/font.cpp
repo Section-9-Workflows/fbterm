@@ -24,6 +24,7 @@
 #include "font.h"
 #include "screen.h"
 #include "fbconfig.h"
+#include <map>
 
 #define OFFSET(TYPE, MEMBER) ((size_t)(&(((TYPE *)0)->MEMBER)))
 #define SUBS(a, b) ((a) > (b) ? (a) - (b) : (b) - (a))
@@ -36,8 +37,7 @@ static FT_Library ftlib;
 static FT_Face *fontFaces;
 static u32 *fontFlags;
 
-static Font::Glyph **glyphCache;
-static bool *glyphCacheInited;
+static std::map<u32, Font::Glyph *> glyphCache;
 
 static void openFont(u32 index);
 
@@ -111,9 +111,7 @@ Font::Font()
 	fontFlags = new u32[fontList->nfont];
 	memset(fontFaces, 0, sizeof(FT_Face) * fontList->nfont);
 
-	glyphCache = new Glyph *[256 * 256];
-	glyphCacheInited = new bool[256];
-	memset(glyphCacheInited, 0, sizeof(bool) * 256);
+	// Use dynamic map to support full Unicode range (including above 0xFFFF for Nerd Fonts)
 
 	FT_Init_FreeType(&ftlib);
 	openFont(0);
@@ -181,18 +179,10 @@ Font::Font()
 
 Font::~Font()
 {
-	for (u32 i = 0; i < 256; i++) {
-		if (!glyphCacheInited[i]) continue;
-
-		for (u32 j = 0; j < 256; j++) {
-			if (glyphCache[i * 256 + j]) {
-				delete[] (u8 *)glyphCache[i * 256 + j];
-			}
-		}
+	for (auto &entry : glyphCache) {
+		if (entry.second) delete[] (u8 *)entry.second;
 	}
-
-	delete[] glyphCache;
-	delete[] glyphCacheInited;
+	glyphCache.clear();
 
 	for (u32 i = 0; i < fontList->nfont; i++) {
 		if (fontFaces[i] && fontFaces[i] != (FT_Face)-1) {
@@ -290,14 +280,8 @@ static int fontIndex(u32 unicode)
 
 Font::Glyph *Font::getGlyph(u32 unicode)
 {
-	if (unicode >= 256 * 256) return 0;
-
-	if (!glyphCacheInited[unicode >> 8]) {
-		glyphCacheInited[unicode >> 8] = true;
-		memset(&glyphCache[unicode & 0xff00], 0, sizeof(Glyph *) * 256);
-	}
-
-	if (glyphCache[unicode]) return glyphCache[unicode];
+	auto it = glyphCache.find(unicode);
+	if (it != glyphCache.end()) return it->second;
 
 	int i = fontIndex(unicode);
 	if (i == -1) return 0;
@@ -309,7 +293,7 @@ Font::Glyph *Font::getGlyph(u32 unicode)
 	FT_UInt index = FT_Get_Char_Index(face, (FT_ULong)unicode);
 	if (!index) return 0;
 
-	FT_Load_Glyph(face, index, FT_LOAD_RENDER | fontFlags[i]);
+	FT_Load_Glyph(face, index, FT_LOAD_RENDER | fontFlags[i] | FT_LOAD_COLOR);
 	FT_Bitmap &bitmap = face->glyph->bitmap;
 
 	u32 x, y, w, h, nx, ny, nw, nh;
@@ -318,28 +302,97 @@ Font::Glyph *Font::getGlyph(u32 unicode)
 	h = nh = bitmap.rows;
 	u8 *buf = bitmap.buffer;
 	s32 top = (s32)mBaseline - face->glyph->bitmap_top;
-	if (top < 0) {
-		buf -= top * bitmap.pitch;
-		h = nh += top;
-		top = 0;
+
+	bool is_color_bitmap = (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
+	u32 bytes_per_pixel = is_color_bitmap ? 4 : 1;
+
+	u32 target_w = w, target_h = h;
+	s32 target_top = top;
+	s32 target_left = face->glyph->bitmap_left;
+
+	u32 optimal_h = (u32)(mHeight * 0.75f);
+	if (optimal_h == 0) optimal_h = 1;
+
+	u32 max_w = (face->glyph->advance.x > (mWidth << 6) * 1.5) ? mWidth * 2 : mWidth;
+
+	if (is_color_bitmap && (h > optimal_h || w > max_w)) {
+		float scale_factor = (float)optimal_h / h;
+		if (w * scale_factor > max_w) {
+			scale_factor = (float)max_w / w;
+		}
+		target_w = (u32)(w * scale_factor);
+		target_h = (u32)(h * scale_factor);
+		if (target_w == 0) target_w = 1;
+		if (target_h == 0) target_h = 1;
+		target_top = (s32)mBaseline - (s32)(face->glyph->bitmap_top * scale_factor);
+		target_left = (s32)(target_left * scale_factor);
 	}
+
+	u32 src_y_offset = 0;
+	if (target_top < 0) {
+		if (is_color_bitmap) {
+			u32 crop = -target_top;
+			if (crop >= target_h) return 0;
+			target_h -= crop;
+			src_y_offset = crop;
+			target_top = 0;
+		} else {
+			buf -= target_top * bitmap.pitch;
+			target_h += target_top;
+			target_top = 0;
+		}
+	}
+
+	nw = target_w;
+	nh = target_h;
 	Screen::instance()->rotateRect(x, y, nw, nh);
 
-	Glyph *glyph = (Glyph *)new u8[OFFSET(Glyph, pixmap) + nw * nh];
-	glyph->left = face->glyph->bitmap_left;
-	glyph->top = top;
-	glyph->width = w;
-	glyph->height = h;
-	glyph->pitch = nw;
+	Glyph *glyph = (Glyph *)new u8[OFFSET(Glyph, pixmap) + nw * nh * bytes_per_pixel];
+	glyph->left = target_left;
+	glyph->top = target_top;
+	glyph->width = target_w;
+	glyph->height = target_h;
+	glyph->pitch = nw * bytes_per_pixel;
+	glyph->is_color_bitmap = is_color_bitmap;
 
-	for (y = 0; y < h; y++, buf += bitmap.pitch) {
-		for (x = 0; x < w; x++) {
+	for (y = 0; y < target_h; y++) {
+		for (x = 0; x < target_w; x++) {
 			nx = x, ny = y;
-			Screen::instance()->rotatePoint(w, h, nx, ny);
+			Screen::instance()->rotatePoint(target_w, target_h, nx, ny);
 
-			glyph->pixmap[ny * nw + nx] =
-				(bitmap.pixel_mode == FT_PIXEL_MODE_MONO) ? ((buf[(x >> 3)] & (0x80 >> (x & 7))) ? 0xff : 0) : buf[x];
+			if (is_color_bitmap) {
+				u32 target_y = y + src_y_offset;
+				u32 r = 0, g = 0, b = 0, a = 0;
+				u32 target_h_orig = target_h + src_y_offset;
+				u32 src_x_start = (x * w) / target_w;
+				u32 src_x_end = ((x + 1) * w) / target_w;
+				u32 src_y_start = (target_y * h) / target_h_orig;
+				u32 src_y_end = ((target_y + 1) * h) / target_h_orig;
+
+				if (src_x_end <= src_x_start) src_x_end = src_x_start + 1;
+				if (src_y_end <= src_y_start) src_y_end = src_y_start + 1;
+
+				u32 count = 0;
+				for (u32 py = src_y_start; py < src_y_end && py < h; py++) {
+					for (u32 px = src_x_start; px < src_x_end && px < w; px++) {
+						u8* p = buf + (py * bitmap.pitch) + (px * 4);
+						b += p[0]; g += p[1]; r += p[2]; a += p[3];
+						count++;
+					}
+				}
+				if (count > 0) { b /= count; g /= count; r /= count; a /= count; }
+
+				u32 dst_idx = ny * nw * 4 + nx * 4;
+				glyph->pixmap[dst_idx + 0] = b;
+				glyph->pixmap[dst_idx + 1] = g;
+				glyph->pixmap[dst_idx + 2] = r;
+				glyph->pixmap[dst_idx + 3] = a;
+			} else {
+				glyph->pixmap[ny * nw + nx] =
+					(bitmap.pixel_mode == FT_PIXEL_MODE_MONO) ? ((buf[(x >> 3)] & (0x80 >> (x & 7))) ? 0xff : 0) : buf[x];
+			}
 		}
+		if (!is_color_bitmap) buf += bitmap.pitch;
 	}
 
 	glyphCache[unicode] = glyph;

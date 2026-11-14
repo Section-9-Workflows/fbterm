@@ -46,11 +46,14 @@ VTerm::CharAttr VTerm::normal_char_attr()
 
 VTerm::CharAttr VTerm::erase_char_attr()
 {
-	CharAttr a(default_char_attr);
-
-	a.fcolor = char_attr.fcolor;
-	a.bcolor = char_attr.bcolor;
-	a.blink = char_attr.blink;
+	CharAttr a = char_attr;
+	if (a.reverse) {
+		u16 temp = a.bcolor;
+		a.bcolor = a.fcolor;
+		a.fcolor = temp;
+		a.reverse = 0;
+	}
+	a.type = CharAttr::Single;
 
 	return a;
 }
@@ -138,6 +141,8 @@ void VTerm::reset()
 	charset = g0_charset;
 
 	esc_state = ESnormal;
+	mExpectST = false;
+	prev_char = 0;
 
 	pending_scroll = 0;
 	scroll_top = 0;
@@ -300,6 +305,34 @@ void VTerm::input(const u8 *buf, u32 count)
 		count--;
 		rescan = 0;
 
+		/* Handle string terminator while in string consuming state */
+		if (esc_state == ESstring) {
+			/* Check for String Terminator (ST):
+			 * - 7-bit ST: ESC \ (0x1B 0x5C)
+			 * - 8-bit ST: 0x9C
+			 * - OSC also commonly terminated by BEL: 0x07
+			 */
+			if (c == 0x9C || c == 0x07) {
+				/* 8-bit ST or BEL received */
+				esc_state = ESnormal;
+				mExpectST = false;
+				prev_char = 0;
+				continue;
+			}
+			if (prev_char == 0x1B && c == 0x5C) {
+				/* ESC \ (7-bit ST) received */
+				esc_state = ESnormal;
+				mExpectST = false;
+				prev_char = 0;
+				continue;
+			}
+			prev_char = c;
+			/* Swallow all other characters in string state */
+			continue;
+		}
+
+		prev_char = c;
+
 		/* Do no translation at all in control states */
 		if (esc_state != ESnormal) {
 			tc = c;
@@ -416,8 +449,6 @@ void VTerm::input(const u8 *buf, u32 count)
 
 void VTerm::do_normal_char()
 {
-	if (cur_char > 0xffff) cur_char = 0xfffd;
-
 	s32 cw = charWidth(cur_char);
 	if (cw <= 0) return;
 
@@ -686,11 +717,12 @@ void VTerm::clear_area(u16 start_x, u16 start_y, u16 end_x, u16 end_y)
 
 	u16 x, y;
 	u32 yp;
+	CharAttr erase_attr = erase_char_attr();
 	for (y=start_y; y<=end_y; y++) {
 		yp = linenumbers[y]*max_width;
 		for (x=start_x; x<=end_x; x++) {
 			text[yp+x]= ' ';
-			attrs[yp+x] = erase_char_attr();
+			attrs[yp+x] = erase_attr;
 		}
 		changed_line(y, start_x, end_x);
 	}
