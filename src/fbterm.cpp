@@ -173,11 +173,11 @@ void FbTerm::run()
 {
 	if (!mInit) return;
 
+	mRun = true;
 	if (isActiveTerm()) processSignal(SIGUSR2);
+	if (!mRun) return;
 
 	FbShellManager::instance()->createShell();
-
-	mRun = true;
 	FbIoDispatcher *io = (FbIoDispatcher*)IoDispatcher::instance();
 	while (mRun) {
 		io->poll();
@@ -215,7 +215,10 @@ void FbTerm::processSignal(u32 signo)
 		break;
 
 	case SIGUSR2:
-		if (!Screen::instance()->handoff(true)) break;
+		if (!Screen::instance()->handoff(true)) {
+			exit();
+			break;
+		}
 		Mouse::instance()->switchVc(true);
 		TtyInput::instance()->switchVc(true);
 		Screen::instance()->switchVc(true);

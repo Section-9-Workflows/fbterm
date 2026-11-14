@@ -2,6 +2,7 @@
 // Copyright 2026 DoubleDensity <doubledense@gmail.com>
 #include "config.h"
 #include "poulsbackdev.h"
+#include "fbterm.h"
 #include "poulsback/poulsback_bo_uapi.h"
 #include "poulsback/poulsback_exec_uapi.h"
 #include <xf86drm.h>
@@ -41,6 +42,7 @@ bool PoulsbackDev::fail(const char *operation)
 		fprintf(stderr, "Poulsback: %s: %s. Drawing stopped; no GPU reset or fallback.\n",
 			operation, strerror(errno));
 	mFailed = true;
+	if (mActive) FbTerm::instance()->exit();
 	return false;
 }
 

@@ -1,3 +1,10 @@
+fbterm (1.8+pb20261114-2) unstable; urgency=medium
+
+  * Stop terminal startup if native display acquisition fails; terminate the
+    event loop after a runtime GPU failure instead of leaving a frozen shell.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sat, 14 Nov 2026 17:10:00 -0500
+
 fbterm (1.8+pb20261114-1) unstable; urgency=medium
 
   * Preserve DoubleDensity's Unicode, emoji, scrolling and idle blanking fork.
