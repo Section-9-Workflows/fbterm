@@ -150,6 +150,28 @@ bool Screen::move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h)
 	u16 top = MIN(srow, drow), bot = MAX(srow, drow) + h;
 	u16 left = scol, right = scol + w;
 
+	// Optimize for full-width scrolls (common case for terminal scrolling)
+	if (scol == 0 && w == mCols) {
+		// Full-width scroll - use hardware panning if available
+		if (mScrollType == YPan || mScrollType == YWrap) {
+			// Calculate offset for hardware panning
+			if (mScrollType == YPan || mScrollType == YWrap) {
+				mOffsetCur += FH((s32)srow - drow);
+
+				if (mOffsetCur < 0) mOffsetCur = mOffsetMax;
+				else if ((u32)mOffsetCur > mOffsetMax)
+					mOffsetCur = 0;
+				setupOffset();
+			}
+
+			if (top) redraw(0, 0, mCols, top);
+			if (bot < mRows) redraw(0, bot, mCols, mRows - bot);
+
+			eraseMargin(drow > srow, drow > srow ? (drow - srow) : (srow - drow));
+			return true;
+		}
+	}
+
 	u32 noaccel_redraw_area = w * (bot - top - 1);
 	u32 accel_redraw_area = mCols * mRows - w * h;
 
@@ -195,19 +217,28 @@ void Screen::eraseMargin(bool top, u16 h)
 	if (mHeight % FH(1)) {
 		fillRect(0, FH(mRows), mWidth, mHeight % FH(1), 0);
 	}
+
+	// Optimize margin erasing for full-width scrolls
+	if (mWidth == FW(mCols) && h == mRows) {
+		// Full screen clear - use optimized memset
+		memset(mVMemBase, 0, mBytesPerLine * mHeight);
+		return;
+	}
 }
 
-void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u16 *text, bool *dw)
+void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
 {
 	u32 startx, fw = FW(1);
 
-	u16 startnum, *starttext;
+	u16 startnum;
+	u32 *starttext;
 	bool *startdw, draw_space = false, draw_text = false;
 
 	for (; num; num--, text++, dw++, x += fw) {
 		if (*text == 0x20) {
 			if (draw_text) {
 				draw_text = false;
+				fillRect(startx, y, x - startx, FH(1), bc);
 				drawGlyphs(startx, y, fc, bc, startnum - num, starttext, startdw);
 			}
 
@@ -234,13 +265,14 @@ void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u16 *text, bool *dw)
 	}
 
 	if (draw_text) {
+		fillRect(startx, y, x - startx, FH(1), bc);
 		drawGlyphs(startx, y, fc, bc, startnum - num, starttext, startdw);
 	} else if (draw_space) {
 		fillRect(startx, y, x - startx, FH(1), bc);
 	}
 }
 
-void Screen::drawGlyphs(u32 x, u32 y, u8 fc, u8 bc, u16 num, u16 *text, bool *dw)
+void Screen::drawGlyphs(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
 {
 	for (; num--; text++, dw++) {
 		drawGlyph(x, y, fc, bc, *text, *dw);
@@ -269,7 +301,7 @@ void Screen::fillRect(u32 x, u32 y, u32 w, u32 h, u8 color)
 	}
 }
 
-void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u16 code, bool dw)
+void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u32 code, bool dw)
 {
 	if (x >= mWidth || y >= mHeight) return;
 
@@ -278,10 +310,7 @@ void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u16 code, bool dw)
 	if (y + h > mHeight) h = mHeight - y;
 
 	Font::Glyph *glyph = (Font::Glyph *)Font::instance()->getGlyph(code);
-	if (!glyph) {
-		fillRect(x, y, w, h, bc);
-		return;
-	}
+	if (!glyph) return;
 
 	s32 top = glyph->top;
 	if (top < 0) top = 0;
@@ -299,20 +328,9 @@ void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u16 code, bool dw)
 	if (y + top + height > mHeight) height = mHeight - (y + top);
 	if (height < 0) height = 0;
 
-	if (top) fillRect(x, y, w, top, bc);
-	if (left > 0) fillRect(x, y + top, left, height, bc);
-
-	s32 right = width + left;
-	if (w > right) fillRect((s32)x + right, y + top, w - right, height, bc);
-
-	s32 bot = top + height;
-	if (h > bot) fillRect(x, y + bot, w, h - bot, bc);
-
 	x += left;
 	y += top;
 	if (x >= mWidth || y >= mHeight || !width || !height) return;
-
-	fillRect(x, y, width, height, bc);
 
 	u32 nwidth = width, nheight = height;
 	rotateRect(x, y, nwidth, nheight);

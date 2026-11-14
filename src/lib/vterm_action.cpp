@@ -520,8 +520,13 @@ void VTerm::set_display_attr()
 			char_attr.fcolor = param[n] % 10;
 			break;
 		case 38:
-			char_attr.fcolor = cur_fcolor;
-			char_attr.underline = true;
+			if (n + 2 <= npar && param[n + 1] == 5) {
+				char_attr.fcolor = param[n + 2];
+				n += 2;
+			} else if (n + 4 <= npar && param[n + 1] == 2) {
+				char_attr.fcolor = (param[n + 2] + param[n + 3] + param[n + 4]) / 3;
+				n += 4;
+			}
 			break;
 		case 39:
 			char_attr.fcolor = cur_fcolor;
@@ -529,6 +534,15 @@ void VTerm::set_display_attr()
 			break;
 		case 40 ... 47:
 			char_attr.bcolor = param[n] % 10;
+			break;
+		case 48:
+			if (n + 2 <= npar && param[n + 1] == 5) {
+				char_attr.bcolor = param[n + 2];
+				n += 2;
+			} else if (n + 4 <= npar && param[n + 1] == 2) {
+				char_attr.bcolor = (param[n + 2] + param[n + 3] + param[n + 4]) / 3;
+				n += 4;
+			}
 			break;
 		case 49:
 			char_attr.bcolor = cur_bcolor;

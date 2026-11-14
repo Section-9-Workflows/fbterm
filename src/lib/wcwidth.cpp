@@ -187,6 +187,9 @@ int mk_wcwidth(wchar_t ucs)
 
   /* if we arrive here, ucs is not a combining or C0/C1 control character */
 
+  /* Modern Emojis (Unicode 6.0+) */
+  if ((ucs >= 0x2600 && ucs <= 0x27BF) || (ucs >= 0x1F300 && ucs <= 0x1F9FF)) return 2;
+
   return 1 + 
     (ucs >= 0x1100 &&
      (ucs <= 0x115f ||                    /* Hangul Jamo init. consonants */
