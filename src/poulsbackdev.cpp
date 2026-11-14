@@ -135,10 +135,11 @@ bool PoulsbackDev::handoff(bool enter)
 	if (enter == mActive) return true;
 	if (enter) {
 		if (drmSetMaster(mFd)) return fail("acquire DRM master");
-		if (ioctl(0, KDSETMODE, KD_GRAPHICS)) return fail("graphics console mode");
 		if (drmModeSetCrtc(mFd, mSaved->crtc_id, mFramebuffer, 0, 0, &mConnector, 1, &mSaved->mode))
 			return fail("native scanout handoff");
 		mActive = true;
+		// Do not leave a text console in graphics mode when scanout is refused.
+		if (ioctl(0, KDSETMODE, KD_GRAPHICS)) return fail("graphics console mode");
 		fprintf(stderr, "Poulsback: native %ux%u stride %u; GPU scrolling enabled.\n", mWidth, mHeight, mBytesPerLine);
 	} else {
 		if (mBlanked) blank(false);

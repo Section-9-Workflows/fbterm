@@ -1,3 +1,10 @@
+fbterm (1.8+pb20261114-3) unstable; urgency=medium
+
+  * Enter graphics console mode only after native scanout is accepted, so
+    an early driver refusal leaves the original text console usable.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sat, 14 Nov 2026 17:22:00 -0500
+
 fbterm (1.8+pb20261114-2) unstable; urgency=medium
 
   * Stop terminal startup if native display acquisition fails; terminate the
