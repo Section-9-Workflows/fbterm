@@ -26,7 +26,17 @@ packages = {}
 for path in paths:
     shutil.copyfile(path, lib / path.name)
     (lib / path.name).chmod(0o755)
-    owner = subprocess.check_output(['dpkg-query', '-S', str(path)], text=True).split(': ')[0]
+    # Debian's merged /usr can differ from the path recorded by dpkg.
+    candidates = [str(path), str(path.resolve())]
+    candidates += [p[4:] for p in candidates if p.startswith('/usr/')]
+    owner = None
+    for candidate in dict.fromkeys(candidates):
+        query = subprocess.run(['dpkg-query', '-S', candidate], text=True, capture_output=True)
+        if query.returncode == 0:
+            owner = query.stdout.split(': ')[0]
+            break
+    if not owner:
+        raise SystemExit('No Debian package owns runtime library: ' + str(path))
     packages[owner] = subprocess.check_output(
         ['dpkg-query', '-W', '-f=${Version}\t${source:Package}\t${source:Version}', owner], text=True)
     notice = Path('/usr/share/doc') / owner.split(':')[0] / 'copyright'
