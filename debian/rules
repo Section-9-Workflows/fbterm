@@ -23,6 +23,10 @@ override_dh_shlibdeps:
 
 override_dh_makeshlibs:
 
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 debian/fbterm/opt/fbterm/lib/ld-linux.so.2
+
 override_dh_strip:
 	strip debian/fbterm/opt/fbterm/bin/fbterm
 
