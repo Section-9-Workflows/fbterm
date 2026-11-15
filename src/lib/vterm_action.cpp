@@ -697,9 +697,8 @@ void VTerm::set_led()
 
 void VTerm::enter_string_state()
 {
-	/* Enter string consuming state (DCS, SOS, PM, APC, OSC).
-	 * All characters are swallowed until ST (ESC \ or 0x9C) is received.
-	 * OSC is also commonly terminated by BEL (0x07). */
+	/* Discard DCS, SOS, PM, APC and OSC contents until ST (ESC \ or 0x9C).
+	 * BEL (0x07), commonly used for OSC, also ends the string. */
 	mExpectST = true;
 }
 

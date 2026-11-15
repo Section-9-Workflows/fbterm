@@ -268,7 +268,7 @@ private:
 	u16 npar, param[NPAR];
 	bool q_mode, palette_mode;
 
-	// string consuming state
+	// State for discarding string contents.
 	bool mExpectST;
 	u32 prev_char;
 
