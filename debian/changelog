@@ -1,3 +1,10 @@
+fbterm (1.8+pb20261115-1) unstable; urgency=medium
+
+  * Match RGB foreground and background requests to the active palette instead
+    of treating their average intensity as a palette index.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sun, 15 Nov 2026 15:57:00 -0500
+
 fbterm (1.8+pb20261114-5) unstable; urgency=medium
 
   * Release inactive consoles' scanout slots while retaining their pixel buffers.
