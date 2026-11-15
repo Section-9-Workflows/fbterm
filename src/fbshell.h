@@ -45,6 +45,7 @@ private:
 	virtual void drawCursor(CharAttr attr, u16 x, u16 y, u32 c);
 	virtual void modeChanged(ModeType type);
 	virtual void request(RequestType type, u32 val = 0);
+	virtual u8 closestColor(u8 red, u8 green, u8 blue);
 
 	virtual void initShellProcess();
 	virtual void readyRead(s8 *buf, u32 len);
