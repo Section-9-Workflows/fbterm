@@ -212,7 +212,7 @@ void Config::checkConfigFile(const s8 *name)
 		"# set TERM to 'linux' instead of the default 'fbterm'\n"
 		"#term-is-linux=no\n"
 		"\n"
-		"# screen blank interval in minutes, 0 means disable it\n"
+		"# Blank the screen after this many idle minutes. Use 0 to disable blanking.\n"
 		"screen-blank-interval=0\n"
 		;
 
