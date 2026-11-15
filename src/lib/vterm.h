@@ -97,6 +97,7 @@ protected:
 	virtual void modeChanged(ModeType type) {}
 	virtual void historyChanged(u32 cur, u32 total) {}
 	virtual void request(RequestType type, u32 val = 0) {}
+	virtual u8 closestColor(u8 red, u8 green, u8 blue) = 0;
 	virtual void requestUpdate(u16 x, u16 y, u16 w, u16 h);
 
 private:
