@@ -1,3 +1,11 @@
+fbterm (1.8+pb20261115-2) unstable; urgency=medium
+
+  * Restore Linux palette reset and updates without swallowing later output.
+  * Restore charset handling by matching the escape table to the state enum.
+  * Include the RGB-to-palette color correction.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sun, 15 Nov 2026 15:58:58 -0500
+
 fbterm (1.8+pb20261114-5) unstable; urgency=medium
 
   * Release inactive consoles' scanout slots while retaining their pixel buffers.
