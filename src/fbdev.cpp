@@ -100,20 +100,20 @@ FbDev::FbDev()
 		bool ypan = (vinfo.yres_virtual > vinfo.yres && finfo.ypanstep && !(FH(1) % finfo.ypanstep));
 		bool ywrap = (finfo.ywrapstep && !(FH(1) % finfo.ywrapstep));
 		if (ywrap && !(vinfo.vmode & FB_VMODE_YWRAP)) {
-			// Try to force YWRAP mode for hardware panning
+			// Request vertical wrapping with space for two screens.
 			vinfo.yres_virtual = vinfo.yres * 2;
 			vinfo.vmode |= FB_VMODE_YWRAP;
 			if (!ioctl(fbdev_fd, FBIOPUT_VSCREENINFO, &vinfo)) {
 				ioctl(fbdev_fd, FBIOGET_FSCREENINFO, &finfo);
 				mBytesPerLine = finfo.line_length;
 			}
-			// Re-check if YWRAP is now available
+			// Check the reported wrap step again after the mode request.
 			ywrap = (finfo.ywrapstep && !(FH(1) % finfo.ywrapstep));
 			ioctl(fbdev_fd, FBIOGET_VSCREENINFO, &vinfo);
 		}
 
 		if ((ypan || ywrap) && !ioctl(fbdev_fd, FBIOPAN_DISPLAY, &vinfo)) {
-			// Successfully enabled hardware panning
+			// The driver accepted the panning request.
 			if (ywrap) {
 				mScrollType = YWrap;
 				mOffsetMax = vinfo.yres_virtual - 1;
@@ -122,18 +122,18 @@ FbDev::FbDev()
 				mOffsetMax = vinfo.yres_virtual - vinfo.yres;
 			}
 		} else {
-			// Hardware panning failed, try to allocate double buffer for optimized memmove
+			// If panning is unavailable or fails, request space for two screens.
 			if (vinfo.yres_virtual < vinfo.yres * 2) {
 				vinfo.yres_virtual = vinfo.yres * 2;
 				if (!ioctl(fbdev_fd, FBIOPUT_VSCREENINFO, &vinfo)) {
-					// Successfully allocated double buffer, refresh info
+					// Refresh the framebuffer layout after the mode change.
 					ioctl(fbdev_fd, FBIOGET_FSCREENINFO, &finfo);
 					mBytesPerLine = finfo.line_length;
 					
 					mScrollType = YPan;
 					mOffsetMax = vinfo.yres_virtual - vinfo.yres;
 				} else {
-					// Fall back to redraw mode
+					// Redraw when the driver refuses the larger framebuffer.
 					mScrollType = Redraw;
 					mOffsetMax = 0;
 				}
@@ -143,9 +143,8 @@ FbDev::FbDev()
 			}
 		}
 
-		// If hardware panning is available, ensure we can use it
+		// Apply the initial offset for the selected panning mode.
 		if (mScrollType == YPan || mScrollType == YWrap) {
-			// Verify panning works
 			s32 test_offset = mOffsetCur;
 			setupOffset();
 		}

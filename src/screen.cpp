@@ -165,11 +165,9 @@ bool Screen::move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h)
 	u16 top = MIN(srow, drow), bot = MAX(srow, drow) + h;
 	u16 left = scol, right = scol + w;
 
-	// Optimize for full-width scrolls (common case for terminal scrolling)
+	// Use panning for full-width scrolls when the driver supports it.
 	if (scol == 0 && w == mCols) {
-		// Full-width scroll - use hardware panning if available
 		if (mScrollType == YPan || mScrollType == YWrap) {
-			// Calculate offset for hardware panning
 			if (mScrollType == YPan || mScrollType == YWrap) {
 				mOffsetCur += FH((s32)srow - drow);
 
@@ -234,9 +232,8 @@ void Screen::eraseMargin(bool top, u16 h)
 		fillRect(0, FH(mRows), mWidth, mHeight % FH(1), 0);
 	}
 
-	// Optimize margin erasing for full-width scrolls
+	// Clear the whole framebuffer when the rows fill the screen width.
 	if (mWidth == FW(mCols) && h == mRows) {
-		// Full screen clear - use optimized memset
 		memset(mVMemBase, 0, mBytesPerLine * mHeight);
 		return;
 	}
