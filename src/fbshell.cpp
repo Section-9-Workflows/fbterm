@@ -508,6 +508,26 @@ void FbShell::modeChanged(ModeType type)
 	}
 }
 
+u8 FbShell::closestColor(u8 red, u8 green, u8 blue)
+{
+	const Color *palette = mPaletteChanged ? mPalette : defaultPalette;
+	u32 bestDistance = 3 * 255 * 255 + 1;
+	u8 best = 0;
+
+	for (u16 index = 0; index < NR_COLORS; index++) {
+		s32 dr = (s32)red - palette[index].red;
+		s32 dg = (s32)green - palette[index].green;
+		s32 db = (s32)blue - palette[index].blue;
+		u32 distance = dr * dr + dg * dg + db * db;
+		if (distance < bestDistance) {
+			bestDistance = distance;
+			best = index;
+			if (!distance) break;
+		}
+	}
+	return best;
+}
+
 void FbShell::request(RequestType type,  u32 val)
 {
 	bool active = (manager->activeShell() == this);
