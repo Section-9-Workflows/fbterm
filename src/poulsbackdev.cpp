@@ -73,6 +73,8 @@ bool PoulsbackDev::initialize()
 	}
 	mFd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
 	if (mFd < 0) return fail("open DRM device");
+	// Opening the first DRM file can grant master before this VT owns the screen.
+	if (drmIsMaster(mFd) && drmDropMaster(mFd)) return fail("release initial DRM master");
 	drmVersion *version = drmGetVersion(mFd);
 	bool matched = version && version->name && !strcmp(version->name, "poulsback");
 	if (version) drmFreeVersion(version);
@@ -132,9 +134,6 @@ bool PoulsbackDev::initialize()
 	mVMemBase = (u8 *)mmap(0, mSize, PROT_READ | PROT_WRITE, MAP_SHARED, mFd, (off_t)create.mmap_offset);
 	if (mVMemBase == MAP_FAILED) { mVMemBase = 0; return fail("scanout mapping"); }
 	memset(mVMemBase, 0, mSize);
-	u32 handles[4] = {mHandle}, pitches[4] = {mBytesPerLine}, offsets[4] = {0};
-	if (drmModeAddFB2(mFd, mWidth, mHeight, DRM_FORMAT_XRGB8888, handles, pitches, offsets, &mFramebuffer, 0))
-		return fail("typed framebuffer");
 	if (drmPrimeHandleToFD(mFd, mHandle, DRM_CLOEXEC | DRM_RDWR, &mDmaFd))
 		return fail("buffer synchronization handle");
 	return true;
@@ -146,6 +145,17 @@ bool PoulsbackDev::handoff(bool enter)
 	if (enter == mActive) return true;
 	if (enter) {
 		if (drmSetMaster(mFd)) return fail("acquire DRM master");
+		// Another VT may have been visible while this instance initialized.
+		drmModeCrtc *saved = drmModeGetCrtc(mFd, mSaved->crtc_id);
+		if (!saved) return fail("current inherited framebuffer");
+		if (!saved->mode_valid || !saved->buffer_id || saved->x || saved->y ||
+		    saved->mode.hdisplay != mWidth || saved->mode.vdisplay != mHeight) {
+			drmModeFreeCrtc(saved); errno = EOPNOTSUPP; return fail("changed display mode");
+		}
+		drmModeFreeCrtc(mSaved); mSaved = saved;
+		u32 handles[4] = {mHandle}, pitches[4] = {mBytesPerLine}, offsets[4] = {0};
+		if (drmModeAddFB2(mFd, mWidth, mHeight, DRM_FORMAT_XRGB8888, handles, pitches, offsets, &mFramebuffer, 0))
+			return fail("typed framebuffer");
 		if (drmModeSetCrtc(mFd, mSaved->crtc_id, mFramebuffer, 0, 0, &mConnector, 1, &mSaved->mode))
 			return fail("native scanout handoff");
 		mActive = true;
@@ -157,6 +167,9 @@ bool PoulsbackDev::handoff(bool enter)
 		if (mFailed) return false;
 		if (drmModeSetCrtc(mFd, mSaved->crtc_id, mSaved->buffer_id, mSaved->x, mSaved->y,
 			&mConnector, 1, &mSaved->mode)) return fail("restore inherited framebuffer");
+		// Inactive VTs keep their pixels but release the limited scanout slots.
+		if (drmModeRmFB(mFd, mFramebuffer)) return fail("release inactive framebuffer");
+		mFramebuffer = 0;
 		mActive = false;
 		if (ioctl(0, KDSETMODE, mOldKdMode)) return fail("restore console mode");
 		if (drmDropMaster(mFd)) return fail("release DRM master");

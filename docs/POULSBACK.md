@@ -15,6 +15,11 @@ simple fills; scrolling avoids reading the slow write-combined framebuffer.
 Actual speed gains have not yet been measured.
 
 VT release restores the saved legacy framebuffer before acknowledging release.
+A console also removes its KMS framebuffer on release, so inactive consoles do
+not consume scanout slots. It keeps the pixel buffer and creates a new KMS
+framebuffer when selected again. Opening DRM releases any automatic master
+grant. Only display acquisition takes master, using the current inherited
+framebuffer as the restore target.
 A failed handoff refuses the VT switch. Panel blanking uses the selected
 connector's DPMS property. Rotation and framebuffer background images are
 currently refused explicitly by this backend; the original fbdev path supports

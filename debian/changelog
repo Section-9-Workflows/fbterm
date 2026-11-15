@@ -1,3 +1,11 @@
+fbterm (1.8+pb20261114-5) unstable; urgency=medium
+
+  * Release inactive consoles' scanout slots while retaining their pixel buffers.
+  * Acquire DRM master only for display handoff and refresh the restore target
+    when selected, so a background instance does not retain display ownership.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sat, 14 Nov 2026 19:25:00 -0500
+
 fbterm (1.8+pb20261114-4) unstable; urgency=medium
 
   * Wait for console activation before opening the native display, so
