@@ -38,6 +38,7 @@ public:
 
 private:
 	void init();
+	s32 blankTimeout();
 	void checkBlank();
 
 	bool mInit, mRun;

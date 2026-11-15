@@ -93,11 +93,11 @@ void FbIoDispatcher::removeIoSource(IoPipe *src, bool isread)
 #endif
 }
 
-void FbIoDispatcher::poll()
+void FbIoDispatcher::poll(s32 timeout)
 {
 #ifdef HAVE_EPOLL
 	epoll_event evs[NR_EPOLL_FDS];
-	s32 nfds = epoll_wait(epollFd, evs, NR_EPOLL_FDS, -1);
+	s32 nfds = epoll_wait(epollFd, evs, NR_EPOLL_FDS, timeout);
 
 	for (s32 i = 0; i < nfds; i++) {
 		IoPipe *src = ioPipeMap[evs[i].data.fd];
@@ -117,7 +117,8 @@ void FbIoDispatcher::poll()
 	}
 #else
 	fd_set rfds = fds;
-	s32 num = select(maxfd + 1, &rfds, 0, 0, 0);
+	struct timeval wait = { timeout / 1000, (timeout % 1000) * 1000 };
+	s32 num = select(maxfd + 1, &rfds, 0, 0, timeout < 0 ? 0 : &wait);
 	if (num <= 0) return;
 
 	for (u32 i = 0; i <= maxfd; i++) {

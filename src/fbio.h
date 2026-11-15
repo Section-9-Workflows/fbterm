@@ -25,7 +25,7 @@
 
 class FbIoDispatcher : public IoDispatcher {
 public:
-	void poll();
+	void poll(s32 timeout);
 
 private:
 	friend class IoDispatcher;

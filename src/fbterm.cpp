@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <time.h>
+#include <limits.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -99,10 +100,17 @@ static void pollSignal()
 
 DEFINE_INSTANCE_DEFAULT(FbTerm)
 
+static u32 monotonicSeconds()
+{
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return now.tv_sec;
+}
+
 FbTerm::FbTerm()
 {
 	mInit = false;
-	mLastActivity = time(0);
+	mLastActivity = monotonicSeconds();
 	mBlankInterval = 0;
 	mIsBlanked = false;
 	Config::instance()->getOption("screen-blank-interval", mBlankInterval);
@@ -180,10 +188,12 @@ void FbTerm::run()
 	FbShellManager::instance()->createShell();
 	FbIoDispatcher *io = (FbIoDispatcher*)IoDispatcher::instance();
 	while (mRun) {
-		io->poll();
+		// Applications can stop cursor blinking, so blanking needs its own deadline.
+		io->poll(blankTimeout());
 #ifndef HAVE_SIGNALFD
 		pollSignal();
 #endif
+		if (mRun) checkBlank();
 	}
 
 	if (isActiveTerm()) processSignal(SIGUSR1);
@@ -199,7 +209,6 @@ void FbTerm::processSignal(u32 signo)
 
 	case SIGALRM:
 		FbShellManager::instance()->drawCursor();
-		FbTerm::instance()->checkBlank();
 		break;
 
 	case SIGUSR1:
@@ -223,6 +232,7 @@ void FbTerm::processSignal(u32 signo)
 		TtyInput::instance()->switchVc(true);
 		Screen::instance()->switchVc(true);
 		FbShellManager::instance()->switchVc(true);
+		activityOccurred();
 		break;
 
 	case SIGCHLD:
@@ -241,7 +251,7 @@ void FbTerm::processSignal(u32 signo)
 
 void FbTerm::activityOccurred()
 {
-	mLastActivity = time(0);
+	mLastActivity = monotonicSeconds();
 	if (mIsBlanked) {
 		mIsBlanked = false;
 		Screen::instance()->blank(false);
@@ -250,11 +260,20 @@ void FbTerm::activityOccurred()
 	}
 }
 
+s32 FbTerm::blankTimeout()
+{
+	if (!mBlankInterval || mIsBlanked || !isActiveTerm()) return -1;
+
+	u32 elapsed = monotonicSeconds() - mLastActivity;
+	u64 interval = (u64)mBlankInterval * 60;
+	if (elapsed >= interval) return 0;
+	u64 remaining = (interval - elapsed) * 1000;
+	return remaining > INT_MAX ? INT_MAX : (s32)remaining;
+}
+
 void FbTerm::checkBlank()
 {
-	if (!mBlankInterval || mIsBlanked) return;
-
-	if ((u32)time(0) - mLastActivity > mBlankInterval * 60) {
+	if (blankTimeout() == 0) {
 		mIsBlanked = true;
 		Screen::instance()->blank(true);
 	}
