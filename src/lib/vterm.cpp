@@ -305,12 +305,12 @@ void VTerm::input(const u8 *buf, u32 count)
 		count--;
 		rescan = 0;
 
-		/* Handle string terminator while in string consuming state */
+		/* Discard string contents until a terminator arrives. */
 		if (esc_state == ESstring) {
-			/* Check for String Terminator (ST):
+			/* String terminators:
 			 * - 7-bit ST: ESC \ (0x1B 0x5C)
 			 * - 8-bit ST: 0x9C
-			 * - OSC also commonly terminated by BEL: 0x07
+			 * - BEL: 0x07 (also commonly used to terminate OSC)
 			 */
 			if (c == 0x9C || c == 0x07) {
 				/* 8-bit ST or BEL received */
@@ -327,7 +327,7 @@ void VTerm::input(const u8 *buf, u32 count)
 				continue;
 			}
 			prev_char = c;
-			/* Swallow all other characters in string state */
+			/* Ignore the remaining string contents. */
 			continue;
 		}
 
