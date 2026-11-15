@@ -107,7 +107,7 @@ FbDev::FbDev()
 				ioctl(fbdev_fd, FBIOGET_FSCREENINFO, &finfo);
 				mBytesPerLine = finfo.line_length;
 			}
-			// Check the reported wrap step again after the mode request.
+			// The mode request may change the wrap step, so check it again.
 			ywrap = (finfo.ywrapstep && !(FH(1) % finfo.ywrapstep));
 			ioctl(fbdev_fd, FBIOGET_VSCREENINFO, &vinfo);
 		}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Bundle the built executable and all libraries it needs in a private runtime."""
+"""Package the executable with its shared-library dependencies and private loader."""
 import json
 from pathlib import Path
 import re

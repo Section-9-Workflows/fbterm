@@ -145,7 +145,7 @@ bool PoulsbackDev::handoff(bool enter)
 	if (enter == mActive) return true;
 	if (enter) {
 		if (drmSetMaster(mFd)) return fail("acquire DRM master");
-		// Another VT may have been visible while this instance initialized.
+		// Read the current framebuffer again; another VT may have been visible at startup.
 		drmModeCrtc *saved = drmModeGetCrtc(mFd, mSaved->crtc_id);
 		if (!saved) return fail("current inherited framebuffer");
 		if (!saved->mode_valid || !saved->buffer_id || saved->x || saved->y ||
@@ -159,7 +159,7 @@ bool PoulsbackDev::handoff(bool enter)
 		if (drmModeSetCrtc(mFd, mSaved->crtc_id, mFramebuffer, 0, 0, &mConnector, 1, &mSaved->mode))
 			return fail("native scanout handoff");
 		mActive = true;
-		// Do not leave a text console in graphics mode when scanout is refused.
+		// Wait for scanout to succeed before switching the text console to graphics mode.
 		if (ioctl(0, KDSETMODE, KD_GRAPHICS)) return fail("graphics console mode");
 		fprintf(stderr, "Poulsback: native %ux%u stride %u; GPU scrolling enabled.\n", mWidth, mHeight, mBytesPerLine);
 	} else {
@@ -179,7 +179,7 @@ bool PoulsbackDev::handoff(bool enter)
 
 bool PoulsbackDev::copyRect(u32 sx, u32 sy, u32 dx, u32 dy, u32 w, u32 h)
 {
-	// Return true after failure to prevent a CPU redraw without GPU synchronization.
+	// Report the copy as handled after failure to avoid an unsynchronized CPU redraw.
 	if (!drawingReady() || !w || !h) return true;
 	if (sx >= mWidth || dx >= mWidth || sy >= mHeight || dy >= mHeight ||
 	    w > mWidth - sx || w > mWidth - dx || h > mHeight - sy || h > mHeight - dy) {

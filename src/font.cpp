@@ -111,7 +111,7 @@ Font::Font()
 	fontFlags = new u32[fontList->nfont];
 	memset(fontFaces, 0, sizeof(FT_Face) * fontList->nfont);
 
-	// The map supports all Unicode code points, including Nerd Font glyphs above 0xFFFF.
+	// Nerd Font glyphs can lie above 0xFFFF, so the map covers all Unicode code points.
 
 	FT_Init_FreeType(&ftlib);
 	openFont(0);
