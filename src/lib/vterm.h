@@ -270,7 +270,7 @@ private:
 	bool q_mode, palette_mode;
 
 	// State for discarding string contents.
-	bool mExpectST;
+	bool osc_prefix;
 	u32 prev_char;
 
 	//history

@@ -141,7 +141,7 @@ void VTerm::reset()
 	charset = g0_charset;
 
 	esc_state = ESnormal;
-	mExpectST = false;
+	osc_prefix = false;
 	prev_char = 0;
 
 	pending_scroll = 0;
@@ -305,6 +305,15 @@ void VTerm::input(const u8 *buf, u32 count)
 		count--;
 		rescan = 0;
 
+		if (esc_state == ESstring && osc_prefix) {
+			osc_prefix = false;
+			// Linux palette commands have no string terminator.
+			if (c == 'P' || c == 'R') {
+				clear_param();
+				esc_state = ESnonstd;
+			}
+		}
+
 		/* Discard string contents until a terminator arrives. */
 		if (esc_state == ESstring) {
 			/* String terminators:
@@ -315,14 +324,14 @@ void VTerm::input(const u8 *buf, u32 count)
 			if (c == 0x9C || c == 0x07) {
 				/* 8-bit ST or BEL received */
 				esc_state = ESnormal;
-				mExpectST = false;
+				osc_prefix = false;
 				prev_char = 0;
 				continue;
 			}
 			if (prev_char == 0x1B && c == 0x5C) {
 				/* ESC \ (7-bit ST) received */
 				esc_state = ESnormal;
-				mExpectST = false;
+				osc_prefix = false;
 				prev_char = 0;
 				continue;
 			}

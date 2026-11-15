@@ -118,9 +118,6 @@ const VTerm::Sequence VTerm::escape_sequences[] = {
 	{ 'R', &VTerm::reset_palette, ESnormal },
 	{ (u16)-1 },
 
-	// ESstring
-	{ (u16)-1 },
-
 	// ESpercent
 	{ '@', &VTerm::clear_utf8,	ESnormal },
 	{ 'G', &VTerm::set_utf8,	ESnormal },
@@ -139,5 +136,8 @@ const VTerm::Sequence VTerm::escape_sequences[] = {
 	{ (u16)-1 },
 
 	// ESfunckey
+	{ (u16)-1 },
+
+	// ESstring
 	{ (u16)-1 },
 };
