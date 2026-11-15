@@ -1,7 +1,9 @@
 # Native Poulsback backend
 
 Build with `--enable-poulsback`, then select `fbterm --poulsback` on the active
-Linux VT. Default fbdev behavior stays available without that option. No X or
+Linux VT. If a login service starts it on an inactive VT, it waits for that VT
+to become active before opening the display device. Default fbdev behavior
+stays available without that option. No X or
 Wayland is involved. The backend checks the Poulsback DRM driver, inherited
 single LVDS mode and 2D-compatible pitch; it does not resize or change timings.
 

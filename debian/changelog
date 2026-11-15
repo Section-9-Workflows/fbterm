@@ -1,3 +1,11 @@
+fbterm (1.8+pb20261114-4) unstable; urgency=medium
+
+  * Wait for console activation before opening the native display, so
+    background login services can start without competing for DRM ownership.
+  * Clarify comments about Unicode, scrolling and private runtime packaging.
+
+ -- DoubleDensity <doubledense@gmail.com>  Sat, 14 Nov 2026 19:15:00 -0500
+
 fbterm (1.8+pb20261114-3) unstable; urgency=medium
 
   * Enter graphics console mode only after native scanout is accepted, so

@@ -52,8 +52,19 @@ bool PoulsbackDev::initialize()
 	struct stat tty;
 	if (ioctl(0, VT_GETSTATE, &vt) || fstat(0, &tty) ||
 	    !S_ISCHR(tty.st_mode) || major(tty.st_rdev) != 4 ||
-	    minor(tty.st_rdev) != vt.v_active || ioctl(0, KDGETMODE, &mOldKdMode)) {
-		fprintf(stderr, "Poulsback requires the active Linux virtual console.\n");
+	    !minor(tty.st_rdev) || minor(tty.st_rdev) > 63) {
+		fprintf(stderr, "Poulsback requires a Linux virtual console.\n");
+		return false;
+	}
+	// Background login services must wait before opening the display device.
+	if (minor(tty.st_rdev) != vt.v_active) {
+		int ret;
+		do { ret = ioctl(0, VT_WAITACTIVE, minor(tty.st_rdev)); } while (ret && errno == EINTR);
+		if (ret) return fail("wait for console activation");
+	}
+	if (ioctl(0, VT_GETSTATE, &vt) || minor(tty.st_rdev) != vt.v_active ||
+	    ioctl(0, KDGETMODE, &mOldKdMode)) {
+		fprintf(stderr, "Poulsback console is no longer active.\n");
 		return false;
 	}
 	if (mRotateType != Rotate0 || getenv("FBTERM_BACKGROUND_IMAGE")) {
