@@ -111,7 +111,7 @@ Font::Font()
 	fontFlags = new u32[fontList->nfont];
 	memset(fontFaces, 0, sizeof(FT_Face) * fontList->nfont);
 
-	// Use dynamic map to support full Unicode range (including above 0xFFFF for Nerd Fonts)
+	// The map supports all Unicode code points, including Nerd Font glyphs above 0xFFFF.
 
 	FT_Init_FreeType(&ftlib);
 	openFont(0);
@@ -313,7 +313,7 @@ Font::Glyph *Font::getGlyph(u32 unicode)
 	u32 optimal_h = (u32)(mHeight * 0.70f);
 	if (optimal_h == 0) optimal_h = 1;
 
-	// Respect the actual width fbterm expects for this character
+	// Choose one or two cells from the glyph advance.
 	u32 max_w = (face->glyph->advance.x > (mWidth << 6) * 1.5) ? mWidth * 2 : mWidth;
 
 	if (is_color_bitmap && (h > optimal_h || w > max_w)) {
@@ -328,7 +328,7 @@ Font::Glyph *Font::getGlyph(u32 unicode)
 		target_top = (s32)mBaseline - (s32)(face->glyph->bitmap_top * scale_factor);
 		target_left = (s32)(target_left * scale_factor);
 
-		// Clamp left offset to prevent bleeding into previous cell
+		// Keep the scaled glyph out of the previous cell.
 		if (target_left < 0) target_left = 0;
 	}
 
