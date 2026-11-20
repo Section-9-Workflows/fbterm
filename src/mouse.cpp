@@ -22,6 +22,24 @@
 DEFINE_INSTANCE(Mouse)
 
 #include "config.h"
+#include "fbconfig.h"
+#include <string.h>
+
+Mouse::Mouse()
+{
+	x = y = 0;
+	mPacketLen = 0;
+	mPixelX = mPixelY = mButtons = 0;
+	mLastClick = 0;
+	s8 native[8];
+	Config::instance()->getOption("poulsback", native, sizeof(native));
+	mDirect = !strcmp(native, "yes");
+}
+
+Mouse::~Mouse()
+{
+}
+
 #ifdef ENABLE_GPM
 
 #include <stddef.h>
@@ -75,6 +93,9 @@ static s32 open_gpm(Gpm_Connect *conn)
 
 Mouse *Mouse::createInstance()
 {
+	Mouse *mouse = new Mouse();
+	if (mouse->mDirect) return mouse;
+
 	Gpm_Connect conn;
 	conn.eventMask = ~0;
 	conn.defaultMask = ~GPM_HARD;
@@ -82,25 +103,22 @@ Mouse *Mouse::createInstance()
 	conn.minMod = 0;
 
 	s32 fd = open_gpm(&conn);
-	if (fd == -1) return 0;
+	if (fd == -1) {
+		delete mouse;
+		return 0;
+	}
 
-	Mouse *mouse = new Mouse();
 	mouse->setFd(fd);
 
 	return mouse;
 }
 
-Mouse::Mouse()
-{
-	x = y = 0;
-}
-
-Mouse::~Mouse()
-{
-}
-
 void Mouse::readyRead(s8 *buf, u32 len)
 {
+	if (mDirect) {
+		readMousedev(buf, len);
+		return;
+	}
 	if (len % sizeof(Gpm_Event)) return;
 
 	FbShell *shell = FbShellManager::instance()->activeShell();
@@ -144,6 +162,7 @@ void Mouse::readyRead(s8 *buf, u32 len)
 
 void Mouse::switchVc(bool enter)
 {
+	if (mDirect) switchMousedev(enter);
 }
 
 #else
@@ -157,20 +176,14 @@ Mouse *Mouse::createInstance()
 	return new Mouse();
 }
 
-Mouse::Mouse()
-{
-}
-
-Mouse::~Mouse()
-{
-}
-
 void Mouse::switchVc(bool enter)
 {
-	ioctl(STDIN_FILENO, KDSETMODE, enter ? KD_GRAPHICS : KD_TEXT);
+	if (mDirect) switchMousedev(enter);
+	else ioctl(STDIN_FILENO, KDSETMODE, enter ? KD_GRAPHICS : KD_TEXT);
 }
 
 void Mouse::readyRead(s8 *buf, u32 len)
 {
+	if (mDirect) readMousedev(buf, len);
 }
 #endif

@@ -30,8 +30,17 @@ public:
 	void switchVc(bool enter);
 private:
 	virtual void readyRead(s8 *buf, u32 len);
+	virtual void ioError(bool read, s32 err);
+	void switchMousedev(bool enter);
+	void readMousedev(s8 *buf, u32 len);
+	void mousedevPacket();
 
 	u16 x, y;
+	bool mDirect;
+	u8 mPacket[4];
+	u32 mPacketLen;
+	s32 mPixelX, mPixelY, mButtons;
+	u64 mLastClick;
 };
 
 #endif

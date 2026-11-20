@@ -114,6 +114,13 @@ mouse:
   click with right button:         paste selected text
 
 Sometimes above actions will not work, please try to redo them with shift key holding down.
+.PP
+The Poulsback backend reads /dev/input/mice directly because GPM does not send
+client events while a console is in graphics mode. Read/write permission on
+that device is required. Mouse input is opened on VT activation and closed on
+release. GPM may continue running for text consoles. Other backends still use
+GPM. Selection is shared between windows within one FbTerm process, not between
+separate FbTerm processes on different VTs.
 .SH "FRAME BUFFER DEVICE"
 Before executing FbTerm, make sure there is a frame buffer device in your system, and you have read/write access right
 with it. Normally FbTerm tries to open /dev/fb0 and /dev/fb/0, environment variable "\fIFRAMEBUFFER\fR" may be used to override this
