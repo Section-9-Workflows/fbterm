@@ -142,6 +142,7 @@ u32 FbShellManager::getIndex(FbShell *shell, bool forward,  bool stepfirst)
 bool FbShellManager::setActive(FbShell *shell)
 {
 	if (mActiveShell == shell) return false;
+	if (mActiveShell && shell) screen->dismissStartupPixmap();
 
 	if (mActiveShell) {
 		mActiveShell->switchVt(false, shell);

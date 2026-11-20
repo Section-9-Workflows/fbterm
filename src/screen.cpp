@@ -100,6 +100,7 @@ Screen *Screen::createInstance()
 	}
 
 	pScreen->initFillDraw();
+	pScreen->loadStartupPixmap();
 	return pScreen;
 }
 
@@ -116,6 +117,8 @@ Screen::Screen()
 
 	mVMemBase = 0;
 	mPalette = 0;
+	mStartupPixmap = 0;
+	mPixmapX = mPixmapY = mPixmapWidth = mPixmapHeight = 0;
 
 	u32 type = Rotate0;
 	Config::instance()->getOption("screen-rotate", type);
@@ -128,6 +131,7 @@ Screen::Screen()
 
 Screen::~Screen()
 {
+	dismissStartupPixmap();
 	Font::uninstance();
 	endFillDraw();
 
@@ -158,6 +162,8 @@ void Screen::switchVc(bool enter)
 
 bool Screen::move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h)
 {
+	// The startup image stays anchored while the text beneath it redraws.
+	if (mStartupPixmap) return false;
 	if (!mScrollEnable) return false;
 	if (copyRect(FW(scol), FH(srow), FW(dcol), FH(drow), FW(w), FH(h))) return true;
 	if (mScrollType == Redraw || scol != dcol) return false;
@@ -242,6 +248,7 @@ void Screen::eraseMargin(bool top, u16 h)
 void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
 {
 	if (!drawingReady()) return;
+	u32 left = x;
 	u32 startx, fw = FW(1);
 
 	u16 startnum;
@@ -284,6 +291,7 @@ void Screen::drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
 	} else if (draw_space) {
 		fillRect(startx, y, x - startx, FH(1), bc);
 	}
+	drawStartupPixmap(left, y, x - left, FH(1));
 }
 
 void Screen::drawGlyphs(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw)
@@ -306,6 +314,7 @@ void Screen::fillRect(u32 x, u32 y, u32 w, u32 h, u8 color)
 	if (x >= mWidth || y >= mHeight || !w || !h) return;
 	if (x + w > mWidth) w = mWidth - x;
 	if (y + h > mHeight) h = mHeight - y;
+	u32 left = x, top = y, width = w, height = h;
 
 	rotateRect(x, y, w, h);
 	adjustOffset(x, y);
@@ -314,6 +323,7 @@ void Screen::fillRect(u32 x, u32 y, u32 w, u32 h, u8 color)
 		if (mScrollType == YWrap && y > mOffsetMax) y -= mOffsetMax + 1;
 		(this->*fill)(x, y++, w, color);
 	}
+	drawStartupPixmap(left, top, width, height);
 }
 
 void Screen::drawGlyph(u32 x, u32 y, u8 fc, u8 bc, u32 code, bool dw)

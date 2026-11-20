@@ -40,6 +40,7 @@ AC_ARG_ENABLE(signalfd,
 AC_CHECK_LIB([util], [forkpty])
 PKG_CHECK_MODULES([FT2], [freetype2])
 PKG_CHECK_MODULES([FC], [fontconfig])
+PKG_CHECK_MODULES([PNG], [libpng >= 1.6])
 AC_ARG_ENABLE([poulsback], AS_HELP_STRING([--enable-poulsback], [build the native Poulsback backend]), [], [enable_poulsback=no])
 AS_IF([test "x$enable_poulsback" = xyes], [
   PKG_CHECK_MODULES([DRM], [libdrm >= 2.4.65])

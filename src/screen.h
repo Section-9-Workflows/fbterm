@@ -47,6 +47,7 @@ public :
 
 	void drawText(u32 x, u32 y, u8 fc, u8 bc, u16 num, u32 *text, bool *dw);
 	void fillRect(u32 x, u32 y, u32 w, u32 h, u8 color);
+	bool dismissStartupPixmap();
 
 	bool move(u16 scol, u16 srow, u16 dcol, u16 drow, u16 w, u16 h);
 	void setPalette(const Color *palette);
@@ -76,6 +77,10 @@ protected:
 	const Color *mPalette;
 
 private:
+	void loadStartupPixmap();
+	void drawStartupPixmap(u32 x, u32 y, u32 w, u32 h);
+	u8 *mStartupPixmap;
+	u32 mPixmapX, mPixmapY, mPixmapWidth, mPixmapHeight;
 	virtual void setupOffset() {}
 	virtual void setupPalette(bool restore) {}
 	virtual const s8 *drvId() = 0;

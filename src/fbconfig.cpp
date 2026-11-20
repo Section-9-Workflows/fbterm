@@ -248,6 +248,9 @@ bool Config::parseArgs(s32 argc, s8 **argv)
 		{ "term-is-linux", no_argument, 0, 'l' },
 		{ "screen-blank-interval", required_argument, 0, 'K' },
 		{ "poulsback", no_argument, 0, 'P' },
+		{ "startup-pixmap", required_argument, 0, 256 },
+		{ "startup-pixmap-x", required_argument, 0, 257 },
+		{ "startup-pixmap-y", required_argument, 0, 258 },
 #ifdef ENABLE_VESA
 		{ "vesa-mode", required_argument, 0, 0 },
 #endif
@@ -270,6 +273,9 @@ bool Config::parseArgs(s32 argc, s8 **argv)
 				"  -h, --help                      display this help and exit\n"
 				"  -V, --version                   display FbTerm version and exit\n"
 				"  -v, --verbose                   display extra information\n"
+				"      --startup-pixmap=FILE      display a PNG until keyboard input\n"
+				"      --startup-pixmap-x=NUM     image position in pixels from the left\n"
+				"      --startup-pixmap-y=NUM     image position in pixels from the top\n"
 				"  -n, --font-names=TEXT           specify font family names\n"
 				"  -s, --font-size=NUM             specify font pixel size\n"
 				"  -W, --font-width=NUM            force font width\n"

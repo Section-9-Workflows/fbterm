@@ -141,6 +141,22 @@ you set "text\-encodings=gbk,big5", shortcut CTRL_ALT_F2 will bind to gbk, and C
 In a number of CJK encodings there are ambiguous width characters which have a width of either narrow or wide
 depending on the context of their use. By default, FbTerm treats them as narrow width characters,
 option "\fIambiguous\-wide\fR" may be used to change the behavior.
+.SH "STARTUP PIXMAP"
+The option \fB\-\-startup-pixmap=FILE\fR displays a PNG at its original pixel size
+on an unrotated 32-bit display, including the native Poulsback backend.
+\fB\-\-startup-pixmap-x=NUM\fR and \fB\-\-startup-pixmap-y=NUM\fR set its
+position in pixels. By default it starts two character cells from the left and
+three rows from the top. Reserve that area in the login banner: the image covers
+text underneath it. Transparency is flattened onto black.
+.PP
+The image survives console switches and display blanking. It clears when keyboard
+input reaches the child program or another internal shell becomes active.
+The first key is still delivered normally. Text scrolls by redraw while the
+image is visible; normal scrolling resumes after dismissal.
+.PP
+An unreadable image, an image that does not fit, or an unsupported display format
+produces a diagnostic and leaves the terminal usable. This is a startup decoration,
+not an inline graphics escape protocol. No image is read from terminal output.
 .SH "BACKGROUND IMAGE"
 FbTerm doesn't load and parse any image file with various formats directly, instead it takes a screen shot of
 frame buffer device on startup if variable \fIFBTERM_BACKGROUND_IMAGE\fR is defined, then uses this screen shot as

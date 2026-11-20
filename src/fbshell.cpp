@@ -671,6 +671,8 @@ void FbShell::switchCodec(u8 index)
 void FbShell::keyInput(s8 *buf, u32 len)
 {
 	FbTerm::instance()->activityOccurred();
+	if (len && screen->dismissStartupPixmap())
+		manager->redraw(0, 0, screen->cols(), screen->rows());
 	if (mImProxy && mImProxy->actived()) {
 		mImProxy->sendKey(buf, len);
 	} else {
