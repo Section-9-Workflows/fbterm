@@ -1,3 +1,10 @@
+fbterm (1.8+pb20261119-2) unstable; urgency=medium
+
+  * Restore mouse selection and paste on native Poulsback consoles.
+  * Reserve space for the selected text terminator.
+
+ -- DoubleDensity <doubledense@gmail.com>  Thu, 19 Nov 2026 23:40:00 -0500
+
 fbterm (1.8+pb20261119-1) unstable; urgency=medium
 
   * Package startup PNG rendering for unrotated 32-bit displays.
