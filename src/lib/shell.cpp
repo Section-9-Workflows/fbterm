@@ -304,7 +304,7 @@ void Shell::endTextSelect()
 
 	u32 len = end - start + 1;
 	u16 buf[len];
-	s8 *text = new s8[len * 3];
+	s8 *text = new s8[len * 3 + 1];
 
 	u16 sx, sy, ex, ey;
 	sx = start % w(), sy = start / w();
