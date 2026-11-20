@@ -1,3 +1,10 @@
+fbterm (1.8+pb20261119-1) unstable; urgency=medium
+
+  * Package startup PNG rendering for unrotated 32-bit displays.
+  * Bundle libpng with the private runtime for older systems.
+
+ -- DoubleDensity <doubledense@gmail.com>  Thu, 19 Nov 2026 23:15:00 -0500
+
 fbterm (1.8+pb20261115-3) unstable; urgency=medium
 
   * Keep the display idle deadline running when applications hide the cursor.

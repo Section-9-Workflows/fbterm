@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: DoubleDensity <doubledense@gmail.com>
 Build-Depends: debhelper-compat (= 12), autoconf, automake, g++,
-               libfreetype6-dev, libfontconfig1-dev, libgpm-dev, libdrm-dev,
+               libfreetype6-dev, libfontconfig1-dev, libgpm-dev, libdrm-dev, libpng-dev,
                pkg-config, python3, ncurses-bin
 Standards-Version: 4.5.1
 Homepage: https://github.com/Section-9-Workflows/fbterm
@@ -15,7 +15,7 @@ Architecture: i386
 Depends: ${misc:Depends}, fontconfig-config
 Description: framebuffer terminal with Unicode, emoji and native Poulsback scrolling
  FbTerm uses fontconfig and FreeType to render a Linux console terminal.
- This fork preserves the owner's Unicode, color emoji and screen blanking
+ This fork includes Unicode, color emoji and screen blanking
  changes and offers an explicitly selected Poulsback DRM/2D backend.
  An isolated runtime under /opt/fbterm supports older i386 installations
  without replacing their system libraries. The executable is /usr/bin/fbterm.

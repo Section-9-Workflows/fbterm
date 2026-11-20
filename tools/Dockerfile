@@ -1,7 +1,7 @@
 FROM docker.io/library/debian@sha256:139eacf457e4a322903c5ac9d5ac33da2b12bd1340e830124694a467a415a0d9 AS build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential debhelper autoconf automake pkg-config python3 \
-    libfreetype6-dev libfontconfig1-dev libgpm-dev libdrm-dev ncurses-bin \
+    libfreetype6-dev libfontconfig1-dev libgpm-dev libdrm-dev libpng-dev ncurses-bin \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /source
 COPY . /source/
